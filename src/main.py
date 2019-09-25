@@ -10,6 +10,7 @@ from task1.polynomial_horner import PolynomialHornerExperiment
 from task1.bubble_sort import BubbleSortExperiment
 from task1.matrix_product import MatrixProductExperiment
 
+
 full_experiment_list = [ConstantExperiment(), SumExperiment(), ProductExperiment(), NormExperiment(),
                         PolynomialDirectExperiment(), PolynomialHornerExperiment(), BubbleSortExperiment(),
                         MatrixProductExperiment()]
@@ -20,10 +21,6 @@ for experiment in experiment_list:
     print("\nstarting: " + experiment.get_name())
     x = []
     y = []
-
-    #singleTime = experiment.start(1)
-    #x.append(1)
-    #y.append(1)
 
     for size in range(50, 505, 50):
         averageTime = experiment.start(size)
