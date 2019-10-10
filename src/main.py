@@ -15,14 +15,14 @@ full_experiment_list = [ConstantExperiment(), SumExperiment(), ProductExperiment
                         PolynomialDirectExperiment(), PolynomialHornerExperiment(), BubbleSortExperiment(),
                         MatrixProductExperiment()]
 
-experiment_list = [MatrixProductExperiment()]
+experiment_list = [ConstantExperiment()]
 
 for experiment in experiment_list:
     print("\nstarting: " + experiment.get_name())
     x = []
     y = []
 
-    for size in range(50, 505, 50):
+    for size in range(5, 1005, 5):
         averageTime = experiment.start(size)
         print("Normalized time for size '" + str(size) + "' is: " + str(averageTime))
 
@@ -30,8 +30,9 @@ for experiment in experiment_list:
         y.append(averageTime)
 
     plt.figure(dpi=300)
-    poly_theoretical = np.polyfit(x, y, 3)
-    x_poly = np.linspace(x[0], x[-1], 50)
+    poly_theoretical = np.polyfit(x, y, 0)
+    print(poly_theoretical)
+    x_poly = np.linspace(x[0], x[-1], 500)
     y_poly = np.polyval(poly_theoretical, x_poly)
 
     plt.plot(x, y, linestyle='none', marker='o', markersize='1', label='actual')

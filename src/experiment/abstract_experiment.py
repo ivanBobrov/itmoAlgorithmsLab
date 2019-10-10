@@ -2,7 +2,7 @@ import timeit
 from .data_factory import DataFactory
 
 class Experiment:
-    NUMBER_OF_RUNS = 5
+    NUMBER_OF_RUNS = 10_000
 
     def __init__(self):
         self.experimentName = "unspecified"
