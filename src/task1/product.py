@@ -1,5 +1,5 @@
 import functools
-from experiment.abstract_experiment import Experiment
+from task1.experiment.abstract_experiment import Experiment
 
 
 class ProductExperiment(Experiment):
