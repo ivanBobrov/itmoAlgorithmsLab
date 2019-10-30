@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+from task2.golden_section import GoldenSection
 
 # Generating random values for the noisy data
 random.seed(86756)
@@ -53,8 +54,40 @@ def gradient_descent(minimization_function, precision, gamma):
             beta = beta_new
 
 
-gradient_descent_result = gradient_descent(minimization_function, 0.00001, 1e-4)
+# Conjugate gradient descent
+def conjugate_gradient_descent(minimization_function, precision):
+    alpha = 0.5
+    beta = 0.5
+    optimization_method = GoldenSection()
+    iterations = 0
+
+    while True:
+        gradient = obtain_gradient(minimization_function, alpha, beta)
+
+        def step_minimization_function(x):
+            return minimization_function(alpha - x * gradient[0],
+                                         beta - x * gradient[1])
+
+        gamma = optimization_method.find_minimum(function=step_minimization_function,
+                                                 a_from=0, b_to=1, epsilon=precision).x_minimum
+        alpha_new = alpha - gamma * gradient[0]
+        beta_new = beta - gamma * gradient[1]
+        iterations += 1
+        if abs(minimization_function(alpha, beta) - minimization_function(alpha_new, beta_new)) < precision:
+            return alpha_new, beta_new, iterations
+        else:
+            alpha = alpha_new
+            beta = beta_new
+
+
+gradient_descent_result = gradient_descent(minimization_function, precision=0.00001, gamma=1e-4)
 print("Gradient descent {" +
       "alpha: " + str(gradient_descent_result[0]) + "; " +
       "beta: " + str(gradient_descent_result[1]) + "} " +
       "obtained with " + str(gradient_descent_result[2]) + " iterations")
+
+conjugate_gradient_result = conjugate_gradient_descent(minimization_function, precision=0.00001)
+print("Conjugate gradient descent {" +
+      "alpha: " + str(conjugate_gradient_result[0]) + "; " +
+      "beta: " + str(conjugate_gradient_result[1]) + "} " +
+      "obtained with " + str(conjugate_gradient_result[2]) + " iterations")
