@@ -2,6 +2,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from task2.golden_section import GoldenSection
+from scipy.optimize import least_squares
 
 # Generating random values for the noisy data
 random.seed(86756)
@@ -29,11 +30,22 @@ def minimization_function(alpha, beta):
     return s
 
 
-def obtain_gradient(minimization_function, a, b):
-    epsilon = 1e-6
-    a_d = (minimization_function(a + epsilon, b) - minimization_function(a, b)) / epsilon
-    b_d = (minimization_function(a, b + epsilon) - minimization_function(a, b)) / epsilon
-    return a_d, b_d
+def obtain_gradient(f, a, b):
+    eps = 1e-6
+    d_a = (f(a + eps, b) - f(a - eps, b)) / (2 * eps)
+    d_b = (f(a, b + eps) - f(a, b - eps)) / (2 * eps)
+    return d_a, d_b
+
+
+def obtain_hessian(f, a, b):
+    eps = 1e-6
+    d_a_a = (f(a + eps, b) - 2 * f(a, b) + f(a - eps, b)) / (eps ** 2)
+    d_b_b = (f(a, b + eps) - 2 * f(a, b) + f(a, b - eps)) / (eps ** 2)
+    d_a_b = d_b_a = (f(a + eps, b + eps)
+                     - f(a - eps, b + eps)
+                     - f(a + eps, b - eps)
+                     + f(a - eps, b - eps)) / (4 * eps ** 2)
+    return d_a_a, d_a_b, d_b_a, d_b_b
 
 
 # Gradient descent
@@ -80,6 +92,30 @@ def conjugate_gradient_descent(minimization_function, precision):
             beta = beta_new
 
 
+# Newton's method
+def newton_method(minimization_function, gamma, precision):
+    alpha = 0.5
+    beta = 0.5
+    iterations = 0
+
+    def get_inverse_matrix(m):
+        c = m[1] * m[2] - m[0] * m[3]
+        return -m[3] / c, m[1] / c, m[2] / c, -m[0] / c
+
+    while True:
+        gradient = obtain_gradient(minimization_function, alpha, beta)
+        hessian = obtain_hessian(minimization_function, alpha, beta)
+        inverse_hessian = get_inverse_matrix(hessian)
+
+        alpha_new = alpha - gamma * (inverse_hessian[0] * gradient[0] + inverse_hessian[1] * gradient[1])
+        beta_new = beta - gamma * (inverse_hessian[2] * gradient[0] + inverse_hessian[3] * gradient[1])
+        iterations += 1
+        if abs(minimization_function(alpha, beta) - minimization_function(alpha_new, beta_new)) < precision:
+            return alpha_new, beta_new, iterations
+        else:
+            alpha = alpha_new
+            beta = beta_new
+
 gradient_descent_result = gradient_descent(minimization_function, precision=0.00001, gamma=1e-4)
 print("Gradient descent {" +
       "alpha: " + str(gradient_descent_result[0]) + "; " +
@@ -91,3 +127,15 @@ print("Conjugate gradient descent {" +
       "alpha: " + str(conjugate_gradient_result[0]) + "; " +
       "beta: " + str(conjugate_gradient_result[1]) + "} " +
       "obtained with " + str(conjugate_gradient_result[2]) + " iterations")
+
+newton_result = newton_method(minimization_function, precision=1e-4, gamma=1)
+print("Newton's method {" +
+      "alpha: " + str(newton_result[0]) + "; " +
+      "beta: " + str(newton_result[1]) + "} " +
+      "obtained with " + str(newton_result[2]) + " iterations")
+
+lm_result = least_squares(lambda p: p[0] * x + p[1] - y, (0.5, 0.5), method='lm')
+print("Levenberg-Marquardt {" +
+      "alpha: " + str(lm_result.x[0]) + "; " +
+      "beta: " + str(lm_result.x[1]) + "} " +
+      "obtained with " + str(lm_result.nfev) + " iterations")
