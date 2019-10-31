@@ -5,7 +5,7 @@ from task2.golden_section import GoldenSection
 from scipy.optimize import least_squares
 
 # Generating random values for the noisy data
-random.seed(86756)
+random.seed(86758)
 alpha = random.random()
 beta = random.random()
 print("alpha: " + str(alpha) + "; beta: " + str(beta) + "\n")
@@ -14,18 +14,30 @@ print("alpha: " + str(alpha) + "; beta: " + str(beta) + "\n")
 x = np.linspace(0, 1, 1001)
 y = []
 for i in range(1001):
-    y_with_noise = alpha * x[i] + beta + random.gauss(0, 0.0001)
+    y_with_noise = alpha * x[i] + beta + random.gauss(0, 1)
     y.append(y_with_noise)
 
-# Initial data plot
-plt.figure(dpi=300)
-plt.plot(x, y)
+
+def linear_function(s):
+    return s[0] * x + s[1]
 
 
-def minimization_function(alpha, beta):
+def linear_minimization_function(alpha, beta):
     s = 0
     for i in range(len(x)):
         s += (alpha * x[i] + beta - y[i]) ** 2
+
+    return s
+
+
+def rational_function(s):
+    return s[0] / (1 + s[1] * x)
+
+
+def rational_minimization_function(alpha, beta):
+    s = 0
+    for i in range(len(x)):
+        s += ((alpha / (1 + beta * x[i])) - y[i]) ** 2
 
     return s
 
@@ -81,7 +93,7 @@ def conjugate_gradient_descent(minimization_function, precision):
                                          beta - x * gradient[1])
 
         gamma = optimization_method.find_minimum(function=step_minimization_function,
-                                                 a_from=0, b_to=1, epsilon=precision).x_minimum
+                                                 a_from=0, b_to=0.01, epsilon=precision).x_minimum
         alpha_new = alpha - gamma * gradient[0]
         beta_new = beta - gamma * gradient[1]
         iterations += 1
@@ -94,8 +106,8 @@ def conjugate_gradient_descent(minimization_function, precision):
 
 # Newton's method
 def newton_method(minimization_function, gamma, precision):
-    alpha = 0.5
-    beta = 0.5
+    alpha = 0.8
+    beta = -0.3
     iterations = 0
 
     def get_inverse_matrix(m):
@@ -116,26 +128,46 @@ def newton_method(minimization_function, gamma, precision):
             alpha = alpha_new
             beta = beta_new
 
-gradient_descent_result = gradient_descent(minimization_function, precision=0.00001, gamma=1e-4)
-print("Gradient descent {" +
-      "alpha: " + str(gradient_descent_result[0]) + "; " +
-      "beta: " + str(gradient_descent_result[1]) + "} " +
-      "obtained with " + str(gradient_descent_result[2]) + " iterations")
 
-conjugate_gradient_result = conjugate_gradient_descent(minimization_function, precision=0.00001)
-print("Conjugate gradient descent {" +
-      "alpha: " + str(conjugate_gradient_result[0]) + "; " +
-      "beta: " + str(conjugate_gradient_result[1]) + "} " +
-      "obtained with " + str(conjugate_gradient_result[2]) + " iterations")
+def run_experiment(minimization_function, test_function, plot_name):
+    gradient_descent_result = gradient_descent(minimization_function, precision=0.001, gamma=1e-4)
+    print("Gradient descent {" +
+          "alpha: " + str(gradient_descent_result[0]) + "; " +
+          "beta: " + str(gradient_descent_result[1]) + "} " +
+          "obtained with " + str(gradient_descent_result[2]) + " iterations")
 
-newton_result = newton_method(minimization_function, precision=1e-4, gamma=1)
-print("Newton's method {" +
-      "alpha: " + str(newton_result[0]) + "; " +
-      "beta: " + str(newton_result[1]) + "} " +
-      "obtained with " + str(newton_result[2]) + " iterations")
+    conjugate_gradient_result = conjugate_gradient_descent(minimization_function, precision=0.0001)
+    print("Conjugate gradient descent {" +
+          "alpha: " + str(conjugate_gradient_result[0]) + "; " +
+          "beta: " + str(conjugate_gradient_result[1]) + "} " +
+          "obtained with " + str(conjugate_gradient_result[2]) + " iterations")
 
-lm_result = least_squares(lambda p: p[0] * x + p[1] - y, (0.5, 0.5), method='lm')
-print("Levenberg-Marquardt {" +
-      "alpha: " + str(lm_result.x[0]) + "; " +
-      "beta: " + str(lm_result.x[1]) + "} " +
-      "obtained with " + str(lm_result.nfev) + " iterations")
+    newton_result = newton_method(minimization_function, precision=1e-4, gamma=0.1)
+    print("Newton's method {" +
+          "alpha: " + str(newton_result[0]) + "; " +
+          "beta: " + str(newton_result[1]) + "} " +
+          "obtained with " + str(newton_result[2]) + " iterations")
+
+    lm_result = least_squares(lambda p: test_function(p) - y, (0.5, 0.5), method='lm')
+    print("Levenberg-Marquardt {" +
+          "alpha: " + str(lm_result.x[0]) + "; " +
+          "beta: " + str(lm_result.x[1]) + "} " +
+          "obtained with " + str(lm_result.nfev) + " iterations")
+
+    # Data plots
+    plt.figure(dpi=300)
+    plt.plot(x, y, linestyle='none', marker='o', markersize='1', label='data')
+    plt.plot(x, test_function(gradient_descent_result), label='Gradient descent')
+    plt.plot(x, test_function(conjugate_gradient_result), label="Conjugate gradient")
+    plt.plot(x, test_function(newton_result), label="Newton's method")
+    plt.plot(x, test_function(lm_result.x), label='Levenberg-Marquardt')
+    plt.legend(frameon=False)
+    plt.title(plot_name)
+    plt.show()
+
+
+print("Linear regression")
+run_experiment(linear_minimization_function, linear_function, 'Linear regression')
+
+print("\nRational regression")
+run_experiment(rational_minimization_function, rational_function, 'Rational regression')
